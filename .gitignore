@@ -1,0 +1,7 @@
+*.clear_text
+tests/cassettes
+.vscode
+.venv
+.pytest_cache
+__pycache__
+.coverage
