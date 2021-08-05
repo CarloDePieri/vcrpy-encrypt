@@ -123,3 +123,38 @@ class TestPersister:
         assert len(generate_key(256)) == 32
         with pytest.raises(ValueError):
             generate_key(3)
+
+    def test_should_generate_clear_text_cassette_when_replaying_encrypted_one_if_specified(self):
+        """It should generate clear text cassette when replaying encrypted one if specified"""
+
+        class MyPersister(BaseEncryptedPersister):
+            encryption_key: bytes = "secretpassword12".encode("UTF-8")
+
+        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr.register_persister(MyPersister)
+
+        cassette_path = f"{test_cassettes_folder}/delayed_clear"
+        request_address = "https://google.com/?key=super-secret"
+
+        # Write the cassette
+        with my_vcr.use_cassette(cassette_path):
+            requests.get(request_address)
+
+        # Check that the cassette has actually been written
+        assert os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.encoded_suffix}")
+        # Ensure the clear text version is not there
+        assert not os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}")
+
+        class MyClearPersister(BaseEncryptedPersister):
+            encryption_key: bytes = "secretpassword12".encode("UTF-8")
+            should_output_clear_text_as_well = True
+
+        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr.register_persister(MyClearPersister)
+
+        # Replay the cassette
+        with my_vcr.use_cassette(cassette_path):
+            requests.get(request_address)
+
+        # Ensure the clear text version is there now
+        assert os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}")

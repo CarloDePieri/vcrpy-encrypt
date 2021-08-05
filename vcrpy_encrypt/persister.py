@@ -9,7 +9,8 @@ from vcr.serialize import deserialize, serialize
 
 
 def generate_key(bit_length: int = 128) -> bytes:
-    """Utility method to generate a valid aes key. Valid bit_length values are 128, 192 or 256."""
+    """Utility method to generate a valid aes key as a UTF-8 encoded string. Valid bit_length values are 128, 192
+    or 256."""
     if bit_length not in [128, 192, 256]:
         raise ValueError("Invalid bit_length: choose between 128, 192 and 256")
     length = int(bit_length / 8)
@@ -22,7 +23,9 @@ class NotConfiguredException(RuntimeError):
 
 
 class BaseEncryptedPersister(ABC):
-    """VCR custom persister that will encrypt and decrypt cassettes with AES-GCM on disk."""
+    """VCR custom persister that will encrypt and decrypt cassettes with AES-GCM on disk.
+
+    This class should be extended with a custom encryption_key field."""
 
     encryption_key: Union[None, bytes] = None
     should_output_clear_text_as_well: bool = False
@@ -48,6 +51,11 @@ class BaseEncryptedPersister(ABC):
         cipher = AESGCM(cls._get_encryption_key())
         # no Authenticated Associated Data (aad) was used, hence None
         cassette_content = cipher.decrypt(nonce, tagged_ciphertext, None)
+        # Check if clear text version is needed
+        clear_text_cassette = f"{cassette_path}{cls.clear_text_suffix}"
+        if cls.should_output_clear_text_as_well and not os.path.isfile(clear_text_cassette):
+            with open(clear_text_cassette, "wb") as f:
+                f.write(cassette_content)
         # Deserialize it
         cassette = deserialize(cassette_content, serializer)
         return cassette
@@ -58,6 +66,10 @@ class BaseEncryptedPersister(ABC):
         dirname, _ = os.path.split(cassette_path)
         if dirname and not os.path.exists(dirname):
             os.makedirs(dirname)
+        # save in clear text if specified
+        if cls.should_output_clear_text_as_well:
+            with open(f"{cassette_path}{cls.clear_text_suffix}", "w") as f:
+                f.write(data)
         # encrypt the cassette with aes-gcm
         cipher = AESGCM(cls._get_encryption_key())
         # make sure the nonce is unique every time
@@ -68,7 +80,3 @@ class BaseEncryptedPersister(ABC):
         # save to the file both the nonce and the budled tag and ciphertext
         with open(f"{cassette_path}{cls.encoded_suffix}", "wb") as f:
             [f.write(x) for x in (nonce, tagged_ciphertext)]
-        # additionally save in clear text if specified
-        if cls.should_output_clear_text_as_well:
-            with open(f"{cassette_path}{cls.clear_text_suffix}", "w") as f:
-                f.write(data)
