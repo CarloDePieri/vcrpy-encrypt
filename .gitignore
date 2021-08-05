@@ -6,3 +6,6 @@ tests/cassettes
 __pycache__
 .coverage
 coverage
+.coveralls.yml
+.secrets
+dist
