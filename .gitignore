@@ -5,3 +5,4 @@ tests/cassettes
 .pytest_cache
 __pycache__
 .coverage
+coverage
