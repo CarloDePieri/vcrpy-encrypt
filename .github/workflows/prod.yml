@@ -57,10 +57,10 @@ jobs:
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
 
-      - name: Install dependencies with poetry.
+      - name: Install dependencies and test for all supported python version
         run: inv test-all-python-version --coverage
 
-      - name: Preapare the coveralls config.
+      - name: Prepare the coveralls config.
         run: |
           echo "repo_token: ${{ secrets.COVERALLS_TOKEN }}" > .coveralls.yml
 
