@@ -118,6 +118,7 @@ def html_cov(c):
 #
 # ACT
 #
+act_dev_ctx = "act-dev-ci"
 act_prod_ctx = "act-prod-ci"
 act_secrets_file = ".secrets"
 
@@ -130,3 +131,13 @@ def act_prod(c, cmd=""):
         c.run(f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash", pty=True)
     elif cmd == "clean":
         c.run(f"docker rm -f {act_prod_ctx}", pty=True)
+
+
+@task
+def act_dev(c, cmd=""):
+    if cmd == "":
+        c.run("act -W .github/workflows/dev.yml", pty=True)
+    elif cmd == "shell":
+        c.run(f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash", pty=True)
+    elif cmd == "clean":
+        c.run(f"docker rm -f {act_dev_ctx}", pty=True)

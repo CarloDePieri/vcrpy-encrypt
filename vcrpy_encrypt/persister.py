@@ -29,7 +29,7 @@ class BaseEncryptedPersister(ABC):
 
     encryption_key: Union[None, bytes] = None
     should_output_clear_text_as_well: bool = False
-    clear_text_suffix: str = ".clear_text"
+    clear_text_suffix: str = ""
     encoded_suffix: str = ".enc"
 
     @classmethod
