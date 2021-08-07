@@ -66,6 +66,9 @@ class MyEncryptedPersister(BaseEncryptedPersister):
 The encrypted persister can now be registered and used:
 
 ```python
+import vcr
+import requests
+
 # create a custom vcr object
 my_vcr = vcr.VCR()
 
@@ -83,7 +86,7 @@ reserving the one with the encrypted persister only for requests resulting in ca
 
 ## Customization
 
-Sometimes it can be handy to inspect the content of a cassette. This can be done even for encrypted cassettes:
+Sometimes it can be handy to inspect the content of a cassette. This can be done even when using encrypted cassettes:
 
 ```python
 class MyEncryptedPersister(BaseEncryptedPersister):
@@ -91,19 +94,18 @@ class MyEncryptedPersister(BaseEncryptedPersister):
     should_output_clear_text_as_well = True
 ```
 
-The persister will output a clear text cassette side by side with the encrypted one. The clear text cassette will
-be saved with a specific file extension (`.clear_text` by default): this will allow to blacklist the extension
-within the version control system to make sure not to share those files. For example for git:
+This persister will output a clear text cassette side by side with the encrypted one. Remember to blacklist all clear
+text cassette in the version control system! For example this will cause git to ignore all `.yaml` file inside a
+cassettes' folder (at any depth):
 
 ```bash
 # file: .gitignore
-*.clear_text
+**/cassettes/**/*.yaml
 ```
-
 Clear text cassettes are only useful for human inspection: the persister will still use only the encrypted ones to
 replay network requests.
 
-If different cassette file extensions are desired, they can be customized:
+If different cassettes file name suffix are desired, they can be customized:
 
 ```python
 class MyEncryptedPersister(BaseEncryptedPersister):
