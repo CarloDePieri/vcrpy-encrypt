@@ -1,6 +1,6 @@
-from typing import Optional, List
-
 import argparse
+from typing import List, Optional
+
 import nox
 
 # Default targets launched by nox
@@ -30,15 +30,17 @@ def init(session: nox.Session):
 
 
 #
-# TESTS
+# LINTERS AND FORMATTER
 #
-@nox.session(reuse_venv=True)
+@nox.session(python="3.7", reuse_venv=True)
 def checks(session: nox.Session):
     """Check the codebase with linters and formatters."""
-    session.install("flake8")
-    session.install("black")
-    shell(f"black --check {project_folder} {tests_folder} noxfile.py", session)
+    session.install("black", "isort", "flake8", "mypy")
+    shell(f"black --check -q {project_folder} {tests_folder} noxfile.py", session)
+    shell(f"isort --check {project_folder} {tests_folder} noxfile.py", session)
     shell(f"flake8 {project_folder}", session)
+    shell("mypy --install-types", session)
+    shell(f"mypy --strict --no-error-summary {project_folder}", session)
 
 
 #
@@ -76,10 +78,7 @@ def tests_cov_report(session: nox.Session):
     shell("xdg-open coverage/cov_html/index.html", session)
 
 
-@nox.session(
-    name="tests.matrix",
-    reuse_venv=True
-)
+@nox.session(name="tests.matrix", reuse_venv=True)
 @nox.parametrize("python", supported_python_versions, ids=supported_python_versions)
 def matrix_tests(session, python):
     """Launch the test suite against a supported python version."""
@@ -87,7 +86,12 @@ def matrix_tests(session, python):
     launch_tests(session, coverage=(python == dev_python_version))
 
 
-def launch_tests(session: nox.Session, additional_args: Optional[List[str]] = None, poetry=False, coverage=False) -> None:
+def launch_tests(
+    session: nox.Session,
+    additional_args: Optional[List[str]] = None,
+    poetry=False,
+    coverage=False,
+) -> None:
     """Build the test command and execute it."""
     cmd = ["pytest"]
     if poetry:
@@ -118,6 +122,14 @@ def env_clean(session):
     shell("rm -rf .venv", session)
 
 
+@nox.session(name="env.rebuild", venv_backend="none")
+def env_rebuild(session):
+    """Rebuild all needed venvs."""
+    shell("rm -rf .nox", session)
+    shell_always(f"nox -s checks --install-only", session)
+    shell_always(f"nox -s tests.matrix --install-only", session)
+
+
 def _use_env(session: nox.Session, env: str = dev_python_version) -> None:
     """Use the specified venv version as '.venv'."""
     # Ensure the env is up-to-date
@@ -139,7 +151,7 @@ def _parse_env(to_parse: Optional[List[str]]) -> str:
         nargs="?",
         choices=supported_python_versions,
         default=dev_python_version,
-        help="The venv version"
+        help="The venv version",
     )
     args: argparse.Namespace = parser.parse_args(args=to_parse)
     return args.env
@@ -169,7 +181,10 @@ def act_prod(session):
     if cmd == "run":
         shell("act -W .github/workflows/prod.yml", session)
     elif cmd == "shell":
-        shell(f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash", session)
+        shell(
+            f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash",
+            session,
+        )
     elif cmd == "clean":
         shell(f"docker rm -f {act_prod_ctx}", session)
 
@@ -181,7 +196,9 @@ def act_dev(session):
     if cmd == "run":
         shell("act -W .github/workflows/dev.yml", session)
     elif cmd == "shell":
-        shell(f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash", session)
+        shell(
+            f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash", session
+        )
     elif cmd == "clean":
         shell(f"docker rm -f {act_dev_ctx}", session)
 
@@ -196,7 +213,7 @@ def parse_act_cmd(to_parse: Optional[List[str]]) -> str:
         nargs="?",
         choices=options,
         default=options[0],
-        help="The act command"
+        help="The act command",
     )
     args: argparse.Namespace = parser.parse_args(args=to_parse)
     return args.cmd

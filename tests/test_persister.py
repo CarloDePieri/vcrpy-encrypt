@@ -1,10 +1,10 @@
 import os
+
 import pytest
 import requests
 import vcr
 
 from tests.conftest import test_cassettes_folder
-
 from vcrpy_encrypt import BaseEncryptedPersister, generate_key
 from vcrpy_encrypt.persister import NotConfiguredException
 
@@ -14,7 +14,7 @@ class TestTheEncryptedPersister:
 
     def test_should_raise_an_error_when_using_the_base_persister_directly(self):
         """It should raise an error when using the base persister directly"""
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(BaseEncryptedPersister)
 
         cassette_path = f"{test_cassettes_folder}/with_base_persister"
@@ -30,7 +30,7 @@ class TestTheEncryptedPersister:
         class MyPersister(BaseEncryptedPersister):
             """"""
 
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/without_key"
@@ -47,7 +47,7 @@ class TestTheEncryptedPersister:
         class MyPersister(BaseEncryptedPersister):
             encryption_key: bytes = "secretpassword12".encode("UTF-8")
 
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/encoded-only"
@@ -60,13 +60,20 @@ class TestTheEncryptedPersister:
         # Check that the cassette has actually been written
         assert os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.encoded_suffix}")
         # Ensure the clear text version is not there
-        assert not os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}")
+        assert not os.path.isfile(
+            f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}"
+        )
 
         # Read back the cassette and check that it can be played back
         with my_vcr.use_cassette(cassette_path) as cassette:
             from vcr.request import Request
-            default_headers = {'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate',
-                               'Connection': 'keep-alive', 'User-Agent': 'python-requests/2.26.0'}
+
+            default_headers = {
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate",
+                "Connection": "keep-alive",
+                "User-Agent": "python-requests/2.26.0",
+            }
             req = Request("GET", request_address, None, default_headers)
             assert cassette.can_play_response_for(req)
 
@@ -77,7 +84,7 @@ class TestTheEncryptedPersister:
             encryption_key = "secretpassword12".encode("UTF-8")
             should_output_clear_text_as_well = True
 
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(MyClearTextPersister)
 
         cassette_path = f"{test_cassettes_folder}/encoded-and-clear"
@@ -90,15 +97,19 @@ class TestTheEncryptedPersister:
         # Check that the cassette has actually been written
         assert os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.encoded_suffix}")
         # Ensure that the clear text version is there as well
-        assert os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}")
+        assert os.path.isfile(
+            f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}"
+        )
 
-    def test_should_generate_clear_text_cassette_when_replaying_encrypted_one_if_specified(self):
+    def test_should_generate_clear_text_cassette_when_replaying_encrypted_one_if_specified(
+        self,
+    ):
         """It should generate clear text cassette when replaying encrypted one if specified"""
 
         class MyPersister(BaseEncryptedPersister):
             encryption_key: bytes = "secretpassword12".encode("UTF-8")
 
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/delayed_clear"
@@ -111,13 +122,15 @@ class TestTheEncryptedPersister:
         # Check that the cassette has actually been written
         assert os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.encoded_suffix}")
         # Ensure the clear text version is not there
-        assert not os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}")
+        assert not os.path.isfile(
+            f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}"
+        )
 
         class MyClearPersister(BaseEncryptedPersister):
             encryption_key: bytes = "secretpassword12".encode("UTF-8")
             should_output_clear_text_as_well = True
 
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(MyClearPersister)
 
         # Replay the cassette
@@ -125,17 +138,20 @@ class TestTheEncryptedPersister:
             requests.get(request_address)
 
         # Ensure the clear text version is there now
-        assert os.path.isfile(f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}")
+        assert os.path.isfile(
+            f"{cassette_path}{BaseEncryptedPersister.clear_text_suffix}"
+        )
 
     def test_can_customize_the_cassettes_extensions(self):
         """It can customize the cassettes extensions"""
+
         class MyPersister(BaseEncryptedPersister):
             encryption_key: bytes = "secretpassword12".encode("UTF-8")
             clear_text_suffix = ".custom_clear"
             encoded_suffix = ".custom_enc"
             should_output_clear_text_as_well = True
 
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/custom_extensions"
@@ -161,12 +177,13 @@ class TestTheGenerateKeyFunction:
             generate_key(3)
 
     def test_produce_valid_key(self):
-        """It produce valid key"""
+        """It produces valid key"""
+
         class MyRandomKeyPersister(BaseEncryptedPersister):
             # This would be useless in reality, do not do this
             encryption_key = generate_key()
 
-        my_vcr = vcr.VCR(record_mode='once')
+        my_vcr = vcr.VCR(record_mode="once")
         my_vcr.register_persister(MyRandomKeyPersister)
 
         cassette_path = f"{test_cassettes_folder}/encoded-with-random-key"
@@ -179,7 +196,12 @@ class TestTheGenerateKeyFunction:
         # Read back the cassette and check that it can be played back
         with my_vcr.use_cassette(cassette_path) as cassette:
             from vcr.request import Request
-            default_headers = {'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate',
-                               'Connection': 'keep-alive', 'User-Agent': 'python-requests/2.26.0'}
+
+            default_headers = {
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate",
+                "Connection": "keep-alive",
+                "User-Agent": "python-requests/2.26.0",
+            }
             req = Request("GET", request_address, None, default_headers)
             assert cassette.can_play_response_for(req)
