@@ -29,6 +29,12 @@ def init(session: nox.Session):
     _use_env(session)
 
 
+@nox.session(name="init.githooks", venv_backend="none")
+def init_githooks(session: nox.Session):
+    """Install all provided githooks."""
+    shell("git config core.hooksPath .githooks", session)
+
+
 #
 # LINTERS AND FORMATTER
 #
