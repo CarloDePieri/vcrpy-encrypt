@@ -1,5 +1,6 @@
 import argparse
-from typing import List, Optional
+import shutil
+from typing import Any, List, Optional, Tuple
 
 import nox
 
@@ -253,22 +254,116 @@ def publish_prod(session: nox.Session):
     shell(f"poetry publish", session)
 
 
-@nox.session(name="publish.tag", venv_backend="none")
-def publish_tag(session: nox.Session):
-    """Bump the version, create and push the tag."""
-    pass
+#
+# VERSION BUMPING
+#
+@nox.session(name="version.bump", venv_backend="none")
+def version_bump(session: nox.Session):
+    """Bump the version, commit and create the tag."""
+    bump_rule = parse_bump_rule(session.posargs)
+
+    current_version = session.run("poetry", "version", "-s", silent=True).replace(
+        "\n", ""
+    )
+    next_version = confirm_version_bump_or_abort(current_version, bump_rule, session)
+
+    session.run(
+        "poetry",
+        "version",
+        next_version,
+        external=True,
+        silent=True,
+    )
+    shell("git add pyproject.toml", session)
+    session.run(
+        "git",
+        "commit",
+        "-m",
+        f"bump version: {current_version} -> {next_version}",
+        external=True,
+        silent=True,
+    )
+    session.run(
+        "git",
+        "tag",
+        "-a",
+        f"v{next_version}",
+        "-m",
+        f"version {next_version}",
+        external=True,
+        silent=True,
+    )
+
+
+def confirm_version_bump_or_abort(
+    current_version: str, bump_rule: str, session: nox.Session
+) -> str:
+    """Confirm the version bump."""
+
+    if bump_rule == "custom":
+        print(f"\nCurrent version: {current_version}")
+        next_version = input("Next version: ")
+    else:
+        # Dry run to determine the next version
+        tmp = session.create_tmp()
+        shutil.copy("pyproject.toml", f"{tmp}/.")
+        with session.chdir(tmp):
+            session.run("poetry", "version", bump_rule, silent=True)
+            next_version = session.run("poetry", "version", "-s", silent=True)
+        shutil.rmtree(tmp)
+
+    # Get confirmation
+    print(f"\nProposed version bump: {current_version} -> {next_version}")
+    answer = None
+    while answer not in ["y", "n", ""]:
+        answer = input("Are you sure? (Y/n) ").lower()
+    print()
+    if answer != "" and answer != "y":
+        session.error()
+    return next_version.replace("\n", "")
+
+
+def parse_bump_rule(to_parse: Optional[List[str]]) -> str:
+    """Use argparse to validate and choose a bump version rule."""
+    options = [
+        "patch",
+        "minor",
+        "major",
+        "prepatch",
+        "preminor",
+        "premajor",
+        "prerelease",
+        "custom",
+    ]
+    parser = argparse.ArgumentParser(description="Choose a valid bump rule.")
+    parser.add_argument(
+        "rule",
+        type=str,
+        nargs=1,
+        choices=options,
+        help="The bump rule",
+    )
+    args: argparse.Namespace = parser.parse_args(args=to_parse)
+    return args.rule[0]
+
+
+def get_current_version(session):
+    """Recover the project current version, as saved in the pyproject.toml file."""
+    current_version = session.run("poetry", "version", "-s", silent=True)
+    current_version = current_version.replace("\n", "")
+    return current_version
 
 
 #
 # UTILITIES
 #
-def shell(cmd_string: str, session: nox.Session) -> None:
+def shell(cmd_string: str, session: nox.Session) -> Optional[Any]:
     """Convenient way to execute a shell command, wraps Session.run.
     This works only when there's no spaces in commands arguments."""
-    session.run(*cmd_string.split(" "), external=True)
+    return session.run(*cmd_string.split(" "), external=True)
 
 
-def shell_always(cmd_string: str, session: nox.Session) -> None:
+def shell_always(cmd_string: str, session: nox.Session) -> Optional[Any]:
     """Convenient way to execute a shell command, wraps Session.run_always.
     This works only when there's no spaces in commands arguments."""
-    session.run_always(*cmd_string.split(" "), external=True)
+    return session.run_always(*cmd_string.split(" "), external=True)
