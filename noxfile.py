@@ -62,7 +62,7 @@ def install_from_poetry_lock(pkgs: List[str], session: nox.Session) -> None:
         f"{tmp}/c.txt",
         external=True,
     )
-    session.run_always("pip", "install", "-c", f"{tmp}/c.txt", *pkgs, silent=True)
+    session.run_always("pip", "install", "-c", f"{tmp}/c.txt", *pkgs, silent=False)
     shutil.rmtree(tmp)
 
 
