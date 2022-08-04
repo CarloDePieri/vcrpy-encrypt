@@ -46,7 +46,6 @@ def checks(session: nox.Session):
     shell(f"black --check -q {project_folder} {tests_folder} noxfile.py", session)
     shell(f"isort --check {project_folder} {tests_folder} noxfile.py", session)
     shell(f"flake8 {project_folder}", session)
-    shell("mypy --install-types", session)
     shell(f"mypy --strict --no-error-summary {project_folder}", session)
 
 
@@ -87,10 +86,10 @@ def tests_cov_report(session: nox.Session):
 
 @nox.session(name="tests.matrix", reuse_venv=True)
 @nox.parametrize("python", supported_python_versions, ids=supported_python_versions)
-def matrix_tests(session, python):
+def matrix_tests(session: nox.Session):
     """Launch the test suite against a supported python version."""
     shell_always("poetry install", session)
-    launch_tests(session, coverage=(python == dev_python_version))
+    launch_tests(session, coverage=(session.python == dev_python_version))
 
 
 def launch_tests(
