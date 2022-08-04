@@ -42,11 +42,28 @@ def init_githooks(session: nox.Session):
 @nox.session(python="3.7", reuse_venv=True)
 def checks(session: nox.Session):
     """Check the codebase with linters and formatters."""
-    session.install("black", "isort", "flake8", "mypy")
+    install_from_poetry_lock(["black", "isort", "flake8", "mypy"], session)
     shell(f"black --check -q {project_folder} {tests_folder} noxfile.py", session)
     shell(f"isort --check {project_folder} {tests_folder} noxfile.py", session)
     shell(f"flake8 {project_folder}", session)
     shell(f"mypy --strict --no-error-summary {project_folder}", session)
+
+
+def install_from_poetry_lock(pkgs: List[str], session: nox.Session) -> None:
+    """Use poetry to produce a constraint file and install all given packages with it.
+    This is useful to install a dependencies subset while maintaining the version constraint."""
+    tmp = session.create_tmp()
+    session.run_always(
+        "poetry",
+        "export",
+        "--dev",
+        "--without-hashes",
+        "-o",
+        f"{tmp}/c.txt",
+        external=True,
+    )
+    session.run_always("pip", "install", "-c", f"{tmp}/c.txt", *pkgs, silent=True)
+    shutil.rmtree(tmp)
 
 
 #
