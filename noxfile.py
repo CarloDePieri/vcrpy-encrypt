@@ -105,6 +105,15 @@ def tests_cov_report(session: nox.Session):
 @nox.parametrize("python", supported_python_versions, ids=supported_python_versions)
 def matrix_tests(session: nox.Session):
     """Launch the test suite against a supported python version."""
+    # python_path = session.run_always(
+    #     "which", "python", silent=True, external=True
+    # ).replace("\n", "")
+    # print(python_path)
+    # shell_always("poetry env info", session)
+    # shell_always("poetry env info -p", session)
+    # shell_always(f"poetry env use {python_path}", session)
+    # shell_always("poetry env info", session)
+    # shell_always("poetry env info -p", session)
     shell_always("poetry install", session)
     launch_tests(session, coverage=(session.python == dev_python_version))
 
