@@ -1,0 +1,126 @@
+---
+name: pr
+
+on:
+
+  pull_request:
+
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: "Log level"
+        required: true
+        default: "warning"
+
+jobs:
+
+  checks:
+    name: checks
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout.
+        uses: actions/checkout@v3
+
+      - name: Ensure act has pipx executables in path.
+        if: ${{ env.ACT }}
+        run: |
+          echo "/root/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache pipx dependencies.
+        uses: actions/cache@v2
+        with:
+          path: |
+            /opt/pipx_bin/poetry
+            /opt/pipx/venvs/poetry
+            /opt/pipx_bin/invoke
+            /opt/pipx_bin/inv
+            /opt/pipx/venvs/invoke
+            /opt/pipx/venvs/shared
+          key: pipx-poetry-invoke-${{ hashFiles('**/poetry.lock') }}-0
+
+      - name: Install poetry and invoke if needed.
+        run: |
+          if ! command -v poetry &> /dev/null
+          then
+            pipx install poetry
+          fi
+          if ! command -v invoke &> /dev/null
+          then
+            pipx install invoke
+          fi
+
+      - name: Install python 3.7, cache poetry packages.
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.7'
+
+      - name: Ensure even act shell has the python executable in path.
+        if: ${{ env.ACT }}
+        run: |
+          echo "export PATH=\"/opt/hostedtoolcache/Python/${{ env.python_version }}/x64:/opt/hostedtoolcache/Python/${{ env.python_version }}/x64/bin:$PATH\"" >> /root/.bashrc
+
+      - name: Cache checks venv.
+        uses: actions/cache@v2
+        with:
+          path: .venvs/
+          key: checks-${{ hashFiles('**/poetry.lock') }}-0
+
+      - name: Run all needed checks.
+        run: inv checks
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ '3.7', '3.8', '3.9', '3.10']
+    name: test(${{ matrix.python-version }})
+
+    steps:
+
+      - name: Checkout.
+        uses: actions/checkout@v3
+
+      - name: Ensure act has pipx executables in path.
+        if: ${{ env.ACT }}
+        run: |
+          echo "/root/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache pipx dependencies.
+        uses: actions/cache@v2
+        with:
+          path: |
+            /opt/pipx_bin/poetry
+            /opt/pipx/venvs/poetry
+            /opt/pipx_bin/invoke
+            /opt/pipx_bin/inv
+            /opt/pipx/venvs/invoke
+            /opt/pipx/venvs/shared
+          key: pipx-poetry-invoke-${{ hashFiles('**/poetry.lock') }}-0
+
+      - name: Install poetry and invoke if needed.
+        run: |
+          if ! command -v poetry &> /dev/null
+          then
+            pipx install poetry
+          fi
+          if ! command -v invoke &> /dev/null
+          then
+            pipx install invoke
+          fi
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache test venv.
+        uses: actions/cache@v2
+        with:
+          path: .venvs/
+          key: tests-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}-0
+
+      - name: Run the tests.
+        run: |
+          inv tests -p ${{ matrix.python-version }}

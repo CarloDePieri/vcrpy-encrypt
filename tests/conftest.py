@@ -1,7 +1,7 @@
 import os
-import pytest
 import shutil
 
+import pytest
 
 test_cassettes_folder = "tests/cassettes"
 

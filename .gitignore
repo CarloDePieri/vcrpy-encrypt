@@ -10,3 +10,6 @@ coverage
 .secrets
 dist
 .idea
+.nox
+.venvs
+.mypy_cache
