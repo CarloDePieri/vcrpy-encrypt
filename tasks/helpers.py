@@ -4,9 +4,32 @@ import sys
 from contextlib import contextmanager
 from typing import Callable, Dict, List
 
-from invoke import Collection, Result, Runner, task
+from invoke import Collection as InvColl
+from invoke import Result, Runner, Task, task
 
-from tasks import dev_python_version, ns, supported_python_versions
+from tasks import dev_python_version, supported_python_versions
+
+
+class Collection(InvColl):
+    """Custom invoke Collection that allows for a saner API.
+    Waiting for invoke PR#789 https://github.com/pyinvoke/invoke/pull/789"""
+
+    def task(self, *args, **kwargs):
+        """
+        Wrap a callable object and register it to the current collection.
+        """
+        maybe_task = task(*args, **kwargs)
+        if isinstance(maybe_task, Task):
+            self.add_task(maybe_task)
+            return maybe_task
+
+        def inner(*b_args, **b_kwargs):
+            configured_task = maybe_task(*b_args, **b_kwargs)
+            self.add_task(configured_task)
+            return configured_task
+
+        return inner
+
 
 #
 # ENV MANAGEMENT
@@ -190,24 +213,30 @@ def _print_job_matrix_report(
         ok("Done")
 
 
-@task
+#
+# ENV TASKS
+#
+env = Collection("env")
+
+
+@env.task(name="use")
 def env_use_task(c, python_version=dev_python_version):
     check_python_version(python_version)
     env_use(c, python_version)
 
 
-@task
+@env.task(name="list")
 def env_list(c):
     c.run("poetry env list", pty=True)
 
 
-@task
+@env.task(name="clean")
 def env_clean(c):
     c.run("rm -rf .venvs && rm -f .venv")
     ok("Virtual envs deleted")
 
 
-@task
+@env.task(name="rebuild")
 def env_rebuild(c):
     # This should stay here, to avoid circular import
     from tasks.main import install_project_dependencies
@@ -220,14 +249,6 @@ def env_rebuild(c):
     env_use(c, dev_python_version, link=True, quiet=True)
     install_project_dependencies(c)
     ok("Virtual envs rebuilt")
-
-
-env = Collection("env")
-env.add_task(env_use_task, "use")
-env.add_task(env_list, "list")
-env.add_task(env_clean, "clean")
-env.add_task(env_rebuild, "rebuild")
-ns.add_collection(env)
 
 
 #

@@ -1,6 +1,6 @@
 from functools import reduce
 
-from invoke import Collection, Runner, task
+from invoke import Runner
 
 from tasks import (
     dev_python_version,
@@ -11,6 +11,7 @@ from tasks import (
     tests_folder,
 )
 from tasks.helpers import (
+    Collection,
     check_python_version,
     get_additional_args_string,
     info,
@@ -33,41 +34,36 @@ def install_project_dependencies(c: Runner, quiet: bool = True) -> None:
 #
 # DEFAULT TASK
 #
-@task(default=True)
+@ns.task(name="ci", default=True)
 def ci(c):
     checks(c)
     tests_matrix(c)
 
 
-ns.add_task(ci, "ci")
-
-
 #
 # PROJECT INIT
 #
-@task(default=True)
-def init(c):
+init = Collection("init")
+ns.add_collection(init)
+
+
+@init.task(name="dev", default=True)
+def init_task(c):
     with poetry_venv(c, dev_python_version):
         install_project_dependencies(c, quiet=False)
 
 
-@task
+@init.task(name="githooks")
 def init_githooks(c):
     cmd = "git config core.hooksPath .githooks"
     info(cmd)
     c.run(cmd, pty=True)
 
 
-init_coll = Collection("init")
-init_coll.add_task(init, "dev")
-init_coll.add_task(init_githooks, "githooks")
-ns.add_collection(init_coll)
-
-
 #
 # LINTERS AND FORMATTER
 #
-@task
+@ns.task(name="checks")
 def checks(c, python_version=dev_python_version):
     info("Checks started")
     check_python_version(python_version)
@@ -86,41 +82,41 @@ def checks(c, python_version=dev_python_version):
     ok("Checks done")
 
 
-ns.add_task(checks, "checks")
-
-
 #
 # TESTS
 #
+tests = Collection("tests")
+ns.add_collection(tests)
+
 ok_msg = "Test run complete!"
 
 
-@task(default=True)
+@tests.task(name="launch", default=True)
 def tests_launch(c, python_version=dev_python_version):
     _tests_launch_in_venv(c, python_version=python_version)
     ok(ok_msg)
 
 
-@task
+@tests.task(name="spec")
 def tests_spec(c, python_version=dev_python_version):
     _tests_launch_in_venv(c, python_version, args="-p no:sugar --spec")
     ok(ok_msg)
 
 
-@task
+@tests.task(name="cov")
 def tests_cov(c, python_version=dev_python_version):
     _tests_launch_in_venv(c, python_version, coverage=True)
     tests_html(c)
     ok(ok_msg)
 
 
-@task
+@tests.task(name="html")
 def tests_html(c):
     pr("xdg-open coverage/cov_html/index.html", c)
-    info("Test report open in the browser")
+    info("Test report opened in the browser")
 
 
-@task
+@tests.task(name="matrix")
 @task_in_poetry_env_matrix(python_versions=supported_python_versions)
 def tests_matrix(c, coverage: bool = False):
     _tests_launch(c, coverage=coverage)
@@ -145,36 +141,30 @@ def _tests_launch(c: Runner, args: str = "", coverage: bool = False) -> None:
     pr(f"pytest{args}{additional_args}{coverage_str}", c, pty=True)
 
 
-tests_coll = Collection("tests")
-tests_coll.add_task(tests_matrix, "matrix")
-tests_coll.add_task(tests_launch, "launch")
-tests_coll.add_task(tests_spec, "spec")
-tests_coll.add_task(tests_cov, "cov")
-tests_coll.add_task(tests_html, "html")
-ns.add_collection(tests_coll)
-
-
 #
 # VCRPY CASSETTES
 #
-@task
+cassettes = Collection("cassettes")
+ns.add_collection(cassettes)
+
+
+@cassettes.task(name="clean")
 def cassettes_clean(c):
     pr("rm -rf tests/cassettes", c)
     ok("Cassettes cache cleaned")
 
 
-cass_coll = Collection("cassettes")
-cass_coll.add_task(cassettes_clean, "clean")
-ns.add_collection(cass_coll)
-
-
 #
 # ACT
 #
+act = Collection("act")
+act_pr = Collection("pr")
+act.add_collection(act_pr)
+ns.add_collection(act)
 act_secrets_file = ".secrets"
 
 
-@task(default=True)
+@act_pr.task(name="launch", default=True)
 def act_pr_launch(c):
     pr(
         "act -W .github/workflows/pr.yml --artifact-server-path /tmp/act pull_request",
@@ -183,7 +173,7 @@ def act_pr_launch(c):
     )
 
 
-@task
+@act_pr.task(name="shell")
 def act_pr_shell(c, stage):
     pr(
         f"docker exec --env-file {act_secrets_file} -it act-pr-{stage} bash",
@@ -192,14 +182,14 @@ def act_pr_shell(c, stage):
     )
 
 
-@task
+@act_pr.task(name="clean")
 def act_pr_clean(c):
     stages = ["checks"]
     containers = reduce(lambda x, y: f"{x} act-pr-{y}", stages, "")
     pr(f"docker rm -f {containers}", c, pty=True)
 
 
-@task
+@act_pr.task(name="clean-cache")
 def act_clean_cache(c):
     pr(
         "docker volume list --filter 'name=^act' | grep local | awk '{print $2}' | "
@@ -207,13 +197,3 @@ def act_clean_cache(c):
         c,
     )
     ok("Act docker volumes deleted")
-
-
-act_coll = Collection("act")
-act_pr_coll = Collection("pr")
-act_pr_coll.add_task(act_pr_launch, "launch")
-act_pr_coll.add_task(act_pr_clean, "clean")
-act_pr_coll.add_task(act_pr_shell, "shell")
-act_coll.add_task(act_clean_cache, "clean_cache")
-act_coll.add_collection(act_pr_coll)
-ns.add_collection(act_coll)
