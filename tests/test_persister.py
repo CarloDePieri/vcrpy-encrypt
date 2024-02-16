@@ -3,6 +3,9 @@ import pytest
 import requests
 import vcr
 
+from vcr.serializers import yamlserializer
+from vcr.persisters.filesystem import CassetteNotFoundError, CassetteDecodeError
+
 from tests.conftest import test_cassettes_folder
 
 from vcrpy_encrypt import BaseEncryptedPersister, generate_key
@@ -148,6 +151,23 @@ class TestTheEncryptedPersister:
         assert os.path.isfile(f"{cassette_path}.custom_enc")
         assert os.path.isfile(f"{cassette_path}.custom_clear")
 
+    def test_should_raise_a_specific_error_if_the_cassette_is_not_found(self):
+        """The encrypted persister should raise a specific error if the cassette is not found."""
+        cassette_path = f"{test_cassettes_folder}/not_there"
+        with pytest.raises(CassetteNotFoundError):
+            BaseEncryptedPersister.load_cassette(cassette_path, yamlserializer)
+
+    def test_should_raise_a_specific_error_if_the_cassette_fails_to_decode(self):
+        """The encrypted persister should raise a specific error if the cassette fails to decode."""
+        persister = BaseEncryptedPersister
+        cassette_path = f"{test_cassettes_folder}/broken"
+        if not os.path.isdir(test_cassettes_folder):
+            os.mkdir(test_cassettes_folder)
+        with open(cassette_path + persister.encoded_suffix, "w+") as f:
+            f.write("this is not a valid cassette")
+        with pytest.raises(CassetteDecodeError):
+            persister.load_cassette(cassette_path, yamlserializer)
+
 
 class TestTheGenerateKeyFunction:
     """Test: The generate key function..."""
@@ -160,8 +180,8 @@ class TestTheGenerateKeyFunction:
         with pytest.raises(ValueError):
             generate_key(3)
 
-    def test_produce_valid_key(self):
-        """It produce valid key"""
+    def test_produces_valid_key(self):
+        """It produces valid key"""
         class MyRandomKeyPersister(BaseEncryptedPersister):
             # This would be useless in reality, do not do this
             encryption_key = generate_key()
