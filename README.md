@@ -1,4 +1,4 @@
-[![PyPI](https://img.shields.io/pypi/v/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/) [![CI Status](https://img.shields.io/github/workflow/status/CarloDePieri/vcrpy-encrypt/prod?logo=github)](https://github.com/CarloDePieri/vcrpy-encrypt/actions/workflows/prod.yml) [![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/vcrpy-encrypt/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/vcrpy-encrypt?branch=main) [![Maintenance](https://img.shields.io/maintenance/yes/2021)](https://github.com/CarloDePieri/vcrpy-encrypt/)
+[![PyPI](https://img.shields.io/pypi/v/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/) [![CI Status](https://img.shields.io/github/workflow/status/CarloDePieri/vcrpy-encrypt/prod?logo=github)](https://github.com/CarloDePieri/vcrpy-encrypt/actions/workflows/prod.yml) [![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/vcrpy-encrypt/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/vcrpy-encrypt?branch=main) [![Maintenance](https://img.shields.io/maintenance/yes/2024)](https://github.com/CarloDePieri/vcrpy-encrypt/)
 
 Encrypt vcrpy cassettes so they can be safely kept under version control.
 
@@ -138,12 +138,12 @@ cd vcrpy-encrypt
 inv install
 ```
 
-This will try to create a virtualenv based on `python3.7` and install there all
+This will try to create a virtualenv based on `python3.8` and install there all
 project's dependencies. If a different python version is preferred, it can be
 selected by specifying  the `--python` (`-p`) flag like this:
 
 ```bash
-inv install -p python3.8
+inv install -p python3.9
 ```
 
 The test suite can be run with commands:

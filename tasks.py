@@ -4,7 +4,7 @@ from invoke import task
 poetry_pypi_testing = "testpypi"
 
 # Supported python version list - these must also be valid executable in your path
-supported_python_versions = ["python3.7", "python3.8", "python3.9"]
+supported_python_versions = ["python3.8", "python3.9", "python3.10", "python3.11", "python3.12"]
 # Use the minimum python version required by the package
 default_python_bin = supported_python_versions[0]
 

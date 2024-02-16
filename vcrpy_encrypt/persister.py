@@ -6,6 +6,7 @@ from typing import Union
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from vcr.serialize import deserialize, serialize
+from vcr.persisters.filesystem import CassetteNotFoundError, CassetteDecodeError
 
 
 def generate_key(bit_length: int = 128) -> bytes:
@@ -46,18 +47,21 @@ class BaseEncryptedPersister(ABC):
             with open(f"{cassette_path}{cls.encoded_suffix}", "rb") as f:
                 nonce, tagged_ciphertext = [f.read(x) for x in (12, -1)]
         except OSError:
-            raise ValueError("Cassette not found.")
-        # decrypt the cassette with aes-gcm
-        cipher = AESGCM(cls._get_encryption_key())
-        # no Authenticated Associated Data (aad) was used, hence None
-        cassette_content = cipher.decrypt(nonce, tagged_ciphertext, None)
-        # Check if clear text version is needed
-        clear_text_cassette = f"{cassette_path}{cls.clear_text_suffix}"
-        if cls.should_output_clear_text_as_well and not os.path.isfile(clear_text_cassette):
-            with open(clear_text_cassette, "wb") as f:
-                f.write(cassette_content)
-        # Deserialize it
-        cassette = deserialize(cassette_content, serializer)
+            raise CassetteNotFoundError(f"Cassette not found at {cassette_path}")
+        try:
+            # decrypt the cassette with aes-gcm
+            cipher = AESGCM(cls._get_encryption_key())
+            # no Authenticated Associated Data (aad) was used, hence None
+            cassette_content = cipher.decrypt(nonce, tagged_ciphertext, None)
+            # Check if clear text version is needed
+            clear_text_cassette = f"{cassette_path}{cls.clear_text_suffix}"
+            if cls.should_output_clear_text_as_well and not os.path.isfile(clear_text_cassette):
+                with open(clear_text_cassette, "wb") as f:
+                    f.write(cassette_content)
+            # Deserialize it
+            cassette = deserialize(cassette_content, serializer)
+        except (Exception,) as e:
+            raise CassetteDecodeError(f"Error decoding {cassette_path}: {e}")
         return cassette
 
     @classmethod
@@ -77,6 +81,6 @@ class BaseEncryptedPersister(ABC):
         # no Authenticated Associated Data (aad) is needed; cryptography implementation
         # will bundle the tag together with the ciphertext
         tagged_ciphertext = cipher.encrypt(nonce, data.encode(), None)
-        # save to the file both the nonce and the budled tag and ciphertext
+        # save to the file both the nonce and the bundled tag and ciphertext
         with open(f"{cassette_path}{cls.encoded_suffix}", "wb") as f:
             [f.write(x) for x in (nonce, tagged_ciphertext)]

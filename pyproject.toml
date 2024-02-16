@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "vcrpy-encrypt"
-version = "0.9.1"
+version = "0.9.2"
 description = "Encrypt vcrpy cassettes so they can be safely kept under version control."
 
 license = "GPL-3.0-only"
@@ -26,25 +26,30 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Topic :: Software Development :: Testing",
   "Topic :: Utilities"
 ]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-cryptography = "^3.4.7"
-vcrpy = "^4.1.1"
+python = "^3.8.1"
+cryptography = "^42.0.3"
+vcrpy = "^6.0.1"
 
 [tool.poetry.dev-dependencies]
-coveralls = "^3.0.1"
-pytest = "^6.2.2"
-pytest-cov = "^2.11.1"
-pytest-sugar = "^0.9.4"
-pytest-spec = "^3.1.0"
-flake8 = "^3.9.2"
-autopep8 = "^1.5.7"
-requests = "^2.26.0"
-invoke = "^1.6.0"
+coveralls = "^3.3.1"
+pytest = "^8.0.0"
+pytest-cov = "^4.1.0"
+pytest-sugar = "^1.0.0"
+pytest-spec = "^3.2.0"
+flake8 = "^7.0.0"
+autopep8 = "^2.0.4"
+requests = "^2.31.0"
+invoke = "^2.2.0"
 
 [build-system]
 requires = ["poetry_core>=1.0.0"]

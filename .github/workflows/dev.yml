@@ -34,15 +34,23 @@ jobs:
 
       - uses: actions/setup-python@v2
         with:
-          python-version: '3.7.x'
-
-      - uses: actions/setup-python@v2
-        with:
           python-version: '3.8.x'
 
       - uses: actions/setup-python@v2
         with:
           python-version: '3.9.x'
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.10.x'
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.11.x'
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.12.x'
 
       - name: Make sure path are there also for act shells.
         if: env.using_act == 'true'
