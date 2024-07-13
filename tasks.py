@@ -71,7 +71,7 @@ def test_spec(c, m=None):
 
 
 @task()
-def test_all_python_version(c, coverage=False):
+def test_all_python_versions(c, coverage=False):
     cov = ""
     if coverage:
         cov = " --cov=vcrpy_encrypt"
@@ -81,6 +81,8 @@ def test_all_python_version(c, coverage=False):
     python_version = supported_python_versions.copy()
     python_version.reverse()
     for version in python_version:
+        print("\n>>> Make sure cassettes folder is empty\n")
+        clear_cassettes(c)
         print(f"\n>>> Installing python venv with version: {version}\n")
         reinstall(c, python=version)
         print(f"\n>>> Running tests with version: {version}\n")
@@ -107,7 +109,8 @@ def test_cov(c, m=None):
     if m is not None:
         marks = f" -m {m}"
     c.run(
-        f"poetry run pytest --cov=vcrpy_encrypt --cov-report annotate:coverage/cov_annotate --cov-report html:coverage/cov_html{marks}", pty=True)
+        f"poetry run pytest --cov=vcrpy_encrypt --cov-report annotate:coverage/cov_annotate --cov-report "
+        f"html:coverage/cov_html{marks}", pty=True)
 
 
 @task(test_cov)
@@ -125,19 +128,21 @@ act_secrets_file = ".secrets"
 
 @task
 def act_prod(c, cmd=""):
+    act_ctx = c.run(f"docker ps | grep {act_prod_ctx} | cut -d' ' -f1", hide=True).stdout.strip()
     if cmd == "":
         c.run("act -W .github/workflows/prod.yml", pty=True)
     elif cmd == "shell":
-        c.run(f"docker exec --env-file {act_secrets_file} -it {act_prod_ctx} bash", pty=True)
+        c.run(f"docker exec --env-file {act_secrets_file} -it {act_ctx} bash", pty=True)
     elif cmd == "clean":
-        c.run(f"docker rm -f {act_prod_ctx}", pty=True)
+        c.run(f"docker rm -f {act_ctx}", pty=True)
 
 
 @task
 def act_dev(c, cmd=""):
+    act_ctx = c.run(f"docker ps | grep {act_dev_ctx} | cut -d' ' -f1", hide=True).stdout.strip()
     if cmd == "":
         c.run("act -W .github/workflows/dev.yml", pty=True)
     elif cmd == "shell":
-        c.run(f"docker exec --env-file {act_secrets_file} -it {act_dev_ctx} bash", pty=True)
+        c.run(f"docker exec --env-file {act_secrets_file} -it {act_ctx} bash", pty=True)
     elif cmd == "clean":
-        c.run(f"docker rm -f {act_dev_ctx}", pty=True)
+        c.run(f"docker rm -f {act_ctx}", pty=True)
