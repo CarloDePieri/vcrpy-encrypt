@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional, Union, Literal
 
 from invoke import task
 
@@ -137,34 +137,35 @@ def html_cov(c):
 #
 # ACT
 #
-act_legacy_ctx = "act-legacy-ci"
-act_prod_ctx = "act-prod-ci"
+act_legacy_prefix = "act-ci-legacy-ci"
+act_new_prefix = "act-ci-ci"
 act_secrets_file = ".secrets"
+AvailableContainer = Union[Literal["new"], Literal["legacy"]]
 
 
-@task
-def act(c):
-    act_legacy(c)
-    act_prod(c)
+@task()
+def act(c, shell: Optional[AvailableContainer] = None, clean: Optional[AvailableContainer] = None):
+    if shell and clean:
+        print("Only one argument between shell and clean can be specified.")
+        exit(1)
 
+    def _get_container_id(container_type: AvailableContainer) -> str:
+        valid_ctx = ["new", "legacy"]
+        if container_type not in valid_ctx:
+            container_list = ", ".join(map(lambda s: f"'{s}'", valid_ctx))
+            print(f"Invalid container name. Choose between {container_list}.")
+            exit(1)
+        if container_type == "new":
+            act_container_prefix = act_new_prefix
+        else:
+            act_container_prefix = act_legacy_prefix
+        return c.run(f"docker ps | grep {act_container_prefix} | cut -d' ' -f1", hide=True).stdout.strip()
 
-@task
-def act_prod(c, cmd=""):
-    act_ctx = c.run(f"docker ps | grep {act_prod_ctx} | cut -d' ' -f1", hide=True).stdout.strip()
-    if cmd == "":
-        c.run("act -W .github/workflows/prod.yml", pty=True)
-    elif cmd == "shell":
+    if shell:
+        act_ctx = _get_container_id(shell)
         c.run(f"docker exec --env-file {act_secrets_file} -it {act_ctx} bash", pty=True)
-    elif cmd == "clean":
+    elif clean:
+        act_ctx = _get_container_id(clean)
         c.run(f"docker rm -f {act_ctx}", pty=True)
-
-
-@task
-def act_legacy(c, cmd=""):
-    act_ctx = c.run(f"docker ps | grep {act_legacy_ctx} | cut -d' ' -f1", hide=True).stdout.strip()
-    if cmd == "":
-        c.run("act -W .github/workflows/legacy.yml", pty=True)
-    elif cmd == "shell":
-        c.run(f"docker exec --env-file {act_secrets_file} -it {act_ctx} bash", pty=True)
-    elif cmd == "clean":
-        c.run(f"docker rm -f {act_ctx}", pty=True)
+    else:
+        c.run("act -W .github/workflows/ci.yml", pty=True)
