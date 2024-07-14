@@ -21,7 +21,7 @@ class TestTheEncryptedPersister:
         my_vcr.register_persister(BaseEncryptedPersister)
 
         cassette_path = f"{test_cassettes_folder}/with_base_persister"
-        request_address = "https://google.com/?key=super-secret"
+        request_address = "https://google.com/?q=super-secret"
 
         with pytest.raises(NotConfiguredException):
             with my_vcr.use_cassette(cassette_path):
@@ -37,7 +37,7 @@ class TestTheEncryptedPersister:
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/without_key"
-        request_address = "https://google.com/?key=super-secret"
+        request_address = "https://google.com/?q=super-secret"
 
         # Write the cassette
         with pytest.raises(NotConfiguredException):
@@ -54,7 +54,7 @@ class TestTheEncryptedPersister:
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/encoded-only"
-        request_address = "https://google.com/?key=super-secret"
+        request_address = "https://google.com/?q=super-secret"
 
         # Write the cassette
         with my_vcr.use_cassette(cassette_path):
@@ -84,7 +84,7 @@ class TestTheEncryptedPersister:
         my_vcr.register_persister(MyClearTextPersister)
 
         cassette_path = f"{test_cassettes_folder}/encoded-and-clear"
-        request_address = "https://google.com/?key=super-secret"
+        request_address = "https://google.com/?q=super-secret"
 
         # Write the cassette
         with my_vcr.use_cassette(cassette_path):
@@ -105,7 +105,7 @@ class TestTheEncryptedPersister:
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/delayed_clear"
-        request_address = "https://google.com/?key=super-secret"
+        request_address = "https://google.com/?q=super-secret"
 
         # Write the cassette
         with my_vcr.use_cassette(cassette_path):
@@ -142,7 +142,7 @@ class TestTheEncryptedPersister:
         my_vcr.register_persister(MyPersister)
 
         cassette_path = f"{test_cassettes_folder}/custom_extensions"
-        request_address = "https://google.com/?key=super-secret"
+        request_address = "https://google.com/?q=super-secret"
 
         # Write the cassette
         with my_vcr.use_cassette(cassette_path):
@@ -190,7 +190,7 @@ class TestTheGenerateKeyFunction:
         my_vcr.register_persister(MyRandomKeyPersister)
 
         cassette_path = f"{test_cassettes_folder}/encoded-with-random-key"
-        request_address = "https://google.com/?key=super-secret"
+        request_address = "https://google.com/?q=super-secret"
 
         # Write the cassette
         with my_vcr.use_cassette(cassette_path):

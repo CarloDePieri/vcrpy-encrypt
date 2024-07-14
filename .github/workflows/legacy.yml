@@ -1,15 +1,11 @@
 ---
-name: dev
+name: legacy
 
 on:
 
-  pull_request:
-    branches:
-      - "main"
-
   push:
     branches:
-      - "testing"
+      - "main"
 
   workflow_dispatch:
     inputs:
@@ -18,11 +14,14 @@ on:
         required: true
         default: "warning"
 
+  schedule:
+    - cron: "0 0 1 */1 *"
+
 jobs:
 
   ci:
     name: ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env:
       using_act: ${{ github.actor == 'nektos/act'}}
       is_cron: ${{ github.event_name == 'schedule' }}
@@ -35,11 +34,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: |
-            3.8.x
-            3.9.x
-            3.10.x
-            3.11.x
-            3.12.x
+            3.8
+            3.9
 
       - name: Make sure path are there also for act shells.
         if: env.using_act == 'true'
@@ -55,5 +51,5 @@ jobs:
       - name: Configure poetry
         run: poetry config virtualenvs.in-project true
 
-      - name: Install dependencies and test for all supported python version
-        run: inv test-all-python-versions
+      - name: Install dependencies and test for all legacy supported python version
+        run: inv test-all-legacy-python-versions

@@ -1,12 +1,15 @@
+from typing import List
+
 from invoke import task
 
 
 poetry_pypi_testing = "testpypi"
 
-# Supported python version list - these must also be valid executable in your path
-supported_python_versions = ["python3.8", "python3.9", "python3.10", "python3.11", "python3.12"]
+# Supported python version lists - these must also be valid executable in your path
+legacy_supported_python_versions = ["python3.8", "python3.9"]
+supported_python_versions = ["python3.10", "python3.11", "python3.12"]
 # Use the minimum python version required by the package
-default_python_bin = supported_python_versions[0]
+default_python_bin = legacy_supported_python_versions[0]
 
 
 # If the most currently activated python version is desired, use 'inv install -p latest'
@@ -71,16 +74,29 @@ def test_spec(c, m=None):
 
 
 @task()
-def test_all_python_versions(c, coverage=False):
+def test_all_new_python_versions(c, coverage=False):
+    # Run the tests on an inverted supported_python_versions list, so that the last one is the default one so
+    # no reset is needed
+    python_versions = supported_python_versions.copy()
+    python_versions.reverse()
+    test_python_versions(c, python_versions, coverage)
+
+
+@task()
+def test_all_legacy_python_versions(c, coverage=False):
+    # Run the tests on an inverted supported_python_versions list, so that the last one is the default one so
+    # no reset is needed
+    python_versions = legacy_supported_python_versions.copy()
+    python_versions.reverse()
+    test_python_versions(c, python_versions, coverage)
+
+
+def test_python_versions(c, python_versions: List[str], coverage=False):
     cov = ""
     if coverage:
         cov = " --cov=vcrpy_encrypt"
     python_version_checked = ""
-    # Run the tests on an inverted supported_python_versions list, so that the last one is the default one so
-    # no reset is needed
-    python_version = supported_python_versions.copy()
-    python_version.reverse()
-    for version in python_version:
+    for version in python_versions:
         print("\n>>> Make sure cassettes folder is empty\n")
         clear_cassettes(c)
         print(f"\n>>> Installing python venv with version: {version}\n")
@@ -93,7 +109,7 @@ def test_all_python_versions(c, coverage=False):
             print(f"\n>>> Could not test correctly under {version} - stopping here!")
             exit(1)
     print(f"\n>>> All test passed! Python version tested:{python_version_checked}")
-    print(f"\n>>> Current venv python version: {python_version[-1]}")
+    print(f"\n>>> Current venv python version: {python_versions[-1]}")
 
 
 @task()
@@ -121,9 +137,15 @@ def html_cov(c):
 #
 # ACT
 #
-act_dev_ctx = "act-dev-ci"
+act_legacy_ctx = "act-legacy-ci"
 act_prod_ctx = "act-prod-ci"
 act_secrets_file = ".secrets"
+
+
+@task
+def act(c):
+    act_legacy(c)
+    act_prod(c)
 
 
 @task
@@ -138,10 +160,10 @@ def act_prod(c, cmd=""):
 
 
 @task
-def act_dev(c, cmd=""):
-    act_ctx = c.run(f"docker ps | grep {act_dev_ctx} | cut -d' ' -f1", hide=True).stdout.strip()
+def act_legacy(c, cmd=""):
+    act_ctx = c.run(f"docker ps | grep {act_legacy_ctx} | cut -d' ' -f1", hide=True).stdout.strip()
     if cmd == "":
-        c.run("act -W .github/workflows/dev.yml", pty=True)
+        c.run("act -W .github/workflows/legacy.yml", pty=True)
     elif cmd == "shell":
         c.run(f"docker exec --env-file {act_secrets_file} -it {act_ctx} bash", pty=True)
     elif cmd == "clean":

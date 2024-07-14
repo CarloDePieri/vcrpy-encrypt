@@ -16,7 +16,6 @@ on:
 
   schedule:
     - cron: "0 0 1 */1 *"
-    # - cron: "*/5 * * * *" # 5 min testing
 
 jobs:
 
@@ -35,11 +34,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: |
-            3.8.x
-            3.9.x
-            3.10.x
-            3.11.x
-            3.12.x
+            3.10
+            3.11
+            3.12
 
       - name: Make sure path are there also for act shells.
         if: env.using_act == 'true'
@@ -56,7 +53,7 @@ jobs:
         run: poetry config virtualenvs.in-project true
 
       - name: Install dependencies and test for all supported python version
-        run: inv test-all-python-versions --coverage
+        run: inv test-all-new-python-versions --coverage
 
       - name: Prepare the coveralls config.
         run: |
