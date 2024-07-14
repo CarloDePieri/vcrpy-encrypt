@@ -1,6 +1,10 @@
-[![PyPI](https://img.shields.io/pypi/v/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/) [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/) [![CI Status](https://img.shields.io/github/actions/workflow/status/CarloDePieri/vcrpy-encrypt/prod.yml?branch=main)](https://github.com/CarloDePieri/vcrpy-encrypt/actions/workflows/prod.yml) [![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/vcrpy-encrypt/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/vcrpy-encrypt?branch=main) [![Maintenance](https://img.shields.io/maintenance/yes/2024)](https://github.com/CarloDePieri/vcrpy-encrypt/)
+[![PyPI](https://img.shields.io/pypi/v/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/vcrpy-encrypt)](https://pypi.org/project/vcrpy-encrypt/) 
+[![ci](https://github.com/CarloDePieri/vcrpy-encrypt/actions/workflows/ci.yml/badge.svg)](https://github.com/CarloDePieri/vcrpy-encrypt/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/CarloDePieri/vcrpy-encrypt/badge.svg?branch=main)](https://coveralls.io/github/CarloDePieri/vcrpy-encrypt?branch=main)
+[![Maintenance](https://img.shields.io/maintenance/yes/2024)](https://github.com/CarloDePieri/vcrpy-encrypt/)
 
-Encrypt vcrpy cassettes so they can be safely kept under version control.
+Encrypt vcrpy cassettes, so they can be safely kept under version control.
 
 ## Rationale
 
@@ -154,20 +158,22 @@ inv test-spec    # run the tests while showing the output as a spec document
 inv test-cov     # run the tests suite and produce a coverage report
 ```
 
-To run the test suite against all supported python version (they must be in path!) run:
+To run the test suite against all supported python version (the executables must be in path!) run:
 
 ```bash
-inv test-all-python-version
+inv test-all-python-versions
 ```
 
-To test the github workflow with [act](https://github.com/nektos/act):
+To test the GitHub workflow with [act](https://github.com/nektos/act):
 
 ```bash
 # First you need a .secrets file - do not version control this!
 echo "repo_token: your_coveralls_token" > .secrets
 
 # Then you can run one of these:
-inv act-prod           # test the dev workflow
-inv act-prod -c shell  # open a shell in the act container (the above must fail first!)
-inv act-prod -c clean  # stop and delete a failed act container
+inv act                 # test the workflow
+inv act -s legacy       # open a shell in the legacy-ci act container (the above must fail first!) 
+inv act -s new          # open a shell in the ci act container (the above must fail first!) 
+inv act -c legacy       # stop and delete a failed legacy-ci act container
+inv act -c new          # stop and delete a failed ci act container
 ```

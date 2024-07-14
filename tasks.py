@@ -74,6 +74,12 @@ def test_spec(c, m=None):
 
 
 @task()
+def test_all_python_versions(c, coverage=False):
+    test_all_legacy_python_versions(c, coverage)
+    test_all_new_python_versions(c, coverage)
+
+
+@task()
 def test_all_new_python_versions(c, coverage=False):
     # Run the tests on an inverted supported_python_versions list, so that the last one is the default one so
     # no reset is needed
